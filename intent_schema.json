@@ -4,14 +4,17 @@
             "intent": "GetStatus"
         },
         {
-            "intent": "GetElevators"
+            "intent": "GetTemp"
         },
         {
-            "intent": "GetTrainTimes",
+            "intent": "GetComputer"
+        },
+        {
+            "intent": "GetRoom",
             "slots": [
                 {
-                    "name": "Station",
-                    "type": "LIST_OF_STATIONS"
+                    "name": "Room",
+                    "type": "LIST_OF_ROOMS"
                 }
             ]
         },
