@@ -68,14 +68,14 @@ def get_welcome_response():
 
 def get_system_status():
     session_attributes = {}
-    card_title = "Hindley System Status"
+    card_title = "Connected Device System Status"
     reprompt_text = ""
     should_end_session = False
 
     response = urllib2.urlopen(API_BASE + "/status")
     bart_system_status = json.load(response)   
 temperature
-    speech_output = "There are currently " + bart_system_status["devicecount"] + " connected. "
+    speech_output = "Current status of devices Connected to the your network, Alex is " + bart_system_status["devicealex"] + " . Graice is " + bart_system_status["devicegracie"] + " . Alfie is " + bart_system_status["devicealfie"] + " . Millie is " + bart_system_status["devicemillie"]
 
     if len(bart_system_status["message"]) > 0:
         speech_output += bart_system_status["message"]
