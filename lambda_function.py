@@ -30,10 +30,12 @@ def on_intent(intent_request, session):
 
     if intent_name == "GetStatus":
         return get_system_status()
-    elif intent_name == "GetElevators":
-        return get_elevator_status()
-    elif intent_name == "GetTrainTimes":
-        return get_train_times(intent)
+    elif intent_name == "GetTemp":
+        return get_temp_status()
+    elif intent_name == "GetComputer":
+        return get_computer_status()
+    elif intent_name == "GetRoom":
+        return get_room_list(intent)
     elif intent_name == "AMAZON.HelpIntent":
         return get_welcome_response()
     elif intent_name == "AMAZON.CancelIntent" or intent_name == "AMAZON.StopIntent":
@@ -46,143 +48,99 @@ def on_session_ended(session_ended_request, session):
     # Cleanup goes here...
 
 def handle_session_end_request():
-    card_title = "BART - Thanks"
-    speech_output = "Thank you for using the BART skill.  See you next time!"
+    card_title = "Hindley Household - Thanks"
+    speech_output = "Thank you for using the Hindley Skill.  See you next time!"
     should_end_session = True
 
     return build_response({}, build_speechlet_response(card_title, speech_output, None, should_end_session))
 
 def get_welcome_response():
     session_attributes = {}
-    card_title = "BART"
-    speech_output = "Welcome to the Alexa BART times skill. " \
-                    "You can ask me for train times from any station, or " \
-                    "ask me for system status or elevator status reports."
-    reprompt_text = "Please ask me for trains times from a station, " \
-                    "for example Fremont."
+    card_title = "Hindley"
+    speech_output = "Welcome to the Hindley Family Status Skill. " \
+                    "You can ask me for status from any room, or " \
+                    "ask me for system status or who's connected to the internet."
+    reprompt_text = "Please ask me for a current status from a room, " \
+                    "for example Livingoom."
     should_end_session = False
     return build_response(session_attributes, build_speechlet_response(
         card_title, speech_output, reprompt_text, should_end_session))
 
 def get_system_status():
     session_attributes = {}
-    card_title = "BART System Status"
+    card_title = "Hindley System Status"
     reprompt_text = ""
     should_end_session = False
 
     response = urllib2.urlopen(API_BASE + "/status")
     bart_system_status = json.load(response)   
-
-    speech_output = "There are currently " + bart_system_status["traincount"] + " trains operating. "
+temperature
+    speech_output = "There are currently " + bart_system_status["devicecount"] + " connected. "
 
     if len(bart_system_status["message"]) > 0:
         speech_output += bart_system_status["message"]
     else:
-        speech_output += "The trains are running normally."
+        speech_output += "Everything is running normally."
 
     return build_response(session_attributes, build_speechlet_response(
         card_title, speech_output, reprompt_text, should_end_session))
 
-def get_elevator_status():
+def get_temp_status():
     session_attributes = {}
-    card_title = "BART Elevator Status"
+    card_title = "Temperature Status"
     reprompt_text = ""
     should_end_session = False
 
-    response = urllib2.urlopen(API_BASE + "/elevatorstatus")
-    bart_elevator_status = json.load(response) 
+    response = urllib2.urlopen(API_BASE + "/tempstatus")
+    bart_temp_status = json.load(response) 
 
-    speech_output = "BART elevator status. " + bart_elevator_status["bsa"]["description"]
+    speech_output = "Temp status. " + bart_temp_status["bsa"]["description"]
 
     return build_response(session_attributes, build_speechlet_response(
         card_title, speech_output, reprompt_text, should_end_session))
 
-def get_train_times(intent):
+def get_room_list(intent):
     session_attributes = {}
-    card_title = "BART Departures"
-    speech_output = "I'm not sure which station you wanted train times for. " \
+    card_title = "Room List"
+    speech_output = "I'm not sure which room you wanted status for. " \
                     "Please try again."
-    reprompt_text = "I'm not sure which station you wanted train times for. " \
-                    "Try asking about Fremont or Powell Street for example."
+    reprompt_text = "I'm not sure which room you wanted status for. " \
+                    "Try asking about Livingroom or Kitchen for example."
     should_end_session = False
 
-    if "Station" in intent["slots"]:
-        station_name = intent["slots"]["Station"]["value"]
-        station_code = get_station_code(station_name.lower())
+    if "Room" in intent["slots"]:
+        room_name = intent["slots"]["Room"]["value"]
+        room_code = get_room_code(room_name.lower())
 
-        if (station_code != "unkn"):
-            card_title = "BART Departures from " + station_name.title()
+        if (room_code != "unkn"):
+            card_title = "Status from " + station_name.title()
 
-            response = urllib2.urlopen(API_BASE + "/departures/" + station_code)
-            station_departures = json.load(response)   
+            response = urllib2.urlopen(API_BASE + "/room/" + room_code)
+            room_status = json.load(response)   
 
-            speech_output = "Train departures from " + station_name + " are as follows: "
-            for destination in station_departures["etd"]:
-                speech_output += "Towards " + destination["destination"] + " on platform " + destination["estimate"][0]["platform"] + ". ";
-                for estimate in destination["estimate"]:
-                    if estimate["minutes"] == "Leaving":
-                        speech_output += "Leaving now: "
-                    elif estimate["minutes"] == "1":
-                        speech_output += "In one minute: "
-                    else:
-                        speech_output += "In " + estimate["minutes"] + " minutes: "
-
-                    speech_output += estimate["length"] + " car train. "
-
-            reprompt_text = ""
+            speech_output = "Status from  " + station_name + " are as follows: "
+            for device in room_status["etd"]:
+                speech_output += "Temp for " + device["device"] + " is " + device["devicetemp"] + ". ";
+                reprompt_text = ""
 
     return build_response(session_attributes, build_speechlet_response(
         card_title, speech_output, reprompt_text, should_end_session))
 
-def get_station_code(station_name):
+def get_room_list(room_name):
     return {
-        "12th street oakland city center": "12th",
-        "16th street mission": "16th",
-        "19th street oakland": "19th",
-        "24th street mission": "24th",
-        "ashby": "ashb",
-        "balboa park": "balb",
-        "bay fair": "bayf",
-        "castro valley": "cast",
-        "civic center": "civc",
-        "coliseum": "cols",
-        "colma": "colm",
-        "concord": "conc",
-        "daly city": "daly",
-        "downtown berkeley": "dbrk",
-        "dublin pleasanton": "dubl",
-        "el cerrito del norte": "deln",
-        "del norte": "deln",
-        "el cerrito plaza": "plza",
-        "embarcadero": "embr",
-        "fremont": "frmt",
-        "fruitvale": "ftvl",
-        "glen park": "glen",
-        "hayward": "hayw",
-        "lafayette": "lafy",
-        "lake merritt": "lake",
-        "macarthur": "mcar",
-        "millbrae": "mlbr",
-        "montgomery street": "mont",
-        "north berkeley": "nbrk",
-        "north concord martinez": "ncon",
-        "oakland airport": "oakl",
-        "orinda": "orin",
-        "pittsburg bay point": "pitt",
-        "pleasant hill": "phil",
-        "powell street": "powl",
-        "richmond": "rich",
-        "rockridge": "rock",
-        "san bruno": "sbrn",
-        "san francisco airport": "sfia",
-        "san leandro": "sanl",
-        "south hayward": "shay",
-        "south san francisco": "ssan",
-        "union city": "ucty",
-        "walnut creek": "wcrk",
-        "west dublin pleasanton": "wdub",
-        "west oakland": "woak",
-    }.get(station_name, "unkn")
+        "LivingRoom": "lr",
+        "Kitchen": "kit",
+        "Hallway": "hw",
+        "Stairs": "st",
+        "Alfies": "al",
+        "Babys": "ba",
+        "Master": "ma",
+        "Girls": "gi",
+        "Bathroom": "br",
+        "Shower": "sh",
+        "Poach": "po",
+        "Garage": "ga",
+    }.get(room_name, "unkn")
 
 def build_speechlet_response(title, output, reprompt_text, should_end_session):
     return {
